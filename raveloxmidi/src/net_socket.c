@@ -264,7 +264,6 @@ int net_socket_read( int fd )
 			}
 		}
 
-
 		if( ( read_buffer_size + recv_len ) > ( read_buffer_block_count * read_buffer_block_size ) )
 		{
 			logging_printf( LOGGING_DEBUG, "net_socket_read: %ld > %ld, incrementing block count\n", ( read_buffer_size + recv_len ), ( read_buffer_block_count * read_buffer_block_size ) );
@@ -333,7 +332,7 @@ int net_socket_read( int fd )
 	} else if( ( fd == local_fd ) && (read_buffer_size == 4) && ( strncmp(read_buffer,"STAT",4)==0) )
 	// Heartbeat request
 	{
-		char *buffer="OK";
+		const char *buffer="OK";
 		size_t bytes_written = 0;
 		net_socket_lock();
 		bytes_written = sendto( fd, buffer, strlen(buffer), MSG_CONFIRM, (void *)&from_addr, from_len);
@@ -343,7 +342,7 @@ int net_socket_read( int fd )
 	} else if( ( fd == local_fd ) && (read_buffer_size == 4) && ( strncmp( read_buffer,"QUIT",4)==0) )
 	// Shutdown request
 	{
-		char *buffer="QT";
+		const char *buffer="QT";
 		size_t bytes_written = 0;
 		net_socket_lock();
 		bytes_written = sendto( fd, buffer, strlen(buffer), MSG_CONFIRM, (void *)&from_addr, from_len);
