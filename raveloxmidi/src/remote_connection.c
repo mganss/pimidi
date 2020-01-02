@@ -157,13 +157,14 @@ void remote_connect_init( void )
 	
 
 make_remote_connection:
-	free( remote_service_name );
 
 	if( ! found_service )
 	{
 		logging_printf(LOGGING_WARN, "remote_connect_init: No service found: %s\n", remote_service_name );
+		free( remote_service_name );
 		return;
 	}
+	free( remote_service_name );
 
 	logging_printf( LOGGING_DEBUG, "remote_connect_init: Found name=\"%s\" address=[%s]:%d\n", found_service->name, found_service->ip_address, found_service->port);
 	ssrc = random_number();
@@ -275,6 +276,7 @@ static void *remote_connect_sync_thread( void *data )
 	fd_set read_fds;
 	struct timeval tv;
 	int sync_interval = 0;
+	int use_control = 0;
 
 	logging_printf( LOGGING_DEBUG, "remote_connect_sync_thread: start\n");
 	logging_printf( LOGGING_DEBUG, "rmeote_connect_sync_thread: sync.interval=%s\n", config_string_get("sync.interval"));
@@ -284,6 +286,15 @@ static void *remote_connect_sync_thread( void *data )
 
 	remote_service_name = config_string_get("remote.connect");
 	sync_interval = config_int_get("sync.interval");
+
+	/* Determine if CK messages are sent over the control port or not */
+	/* This is a workaround for rtpMIDI not responding unless CK messages are sent via the data port */
+	if( config_is_set("remote.use_control") )
+	{
+		use_control = ( is_yes( config_string_get("remote.use_control") ) ? 1 : 0 );
+	} else {
+		use_control = 1;
+	}
 
 	do
 	{
@@ -299,18 +310,18 @@ static void *remote_connect_sync_thread( void *data )
 		tv.tv_sec = sync_interval;
 		select( shutdown_fd + 1, &read_fds, NULL , NULL, &tv );
 		logging_printf( LOGGING_DEBUG, "remote_connect_sync_thread: select()=\"%s\"\n", strerror( errno ) );
-		if( net_socket_get_shutdown_lock() == 1 )
+		if( net_socket_get_shutdown_status() == SHUTDOWN )
 		{
 			logging_printf(LOGGING_DEBUG, "remote_connect_sync_thread: shutdown received during poll\n");
 			break;
 		}
 		response = net_response_sync( ctx->send_ssrc , ctx->start );
-		net_ctx_send( ctx, response->buffer, response->len, USE_CONTROL_PORT );
+		net_ctx_send( ctx, response->buffer, response->len, use_control );
 		hex_dump( response->buffer, response->len );
 		net_response_destroy( &response );
 	} while( 1 );
 
-	if( net_socket_get_shutdown_lock() == 1 )
+	if( net_socket_get_shutdown_status() == SHUTDOWN )
 	{
 		logging_printf(LOGGING_DEBUG, "remote_connect_sync_thread: shutdown received\n");
 	}

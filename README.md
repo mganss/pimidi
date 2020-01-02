@@ -83,6 +83,21 @@ Where the option isn't specified, a default value is used.
 For debugging, you can run ```raveloxmidi -N -d``` to keep raveloxmidi in the foreground and send debug-level output to stderr.
 
 ### Options
+
+Some parameters are marked as multi-value which means you can either specify them as a single value or with numerical index as a suffix.  For example, if
+       there is a parameter called alsa.output_device you can use either:
+
+```        alsa.output_device = device_name```
+
+       or
+
+```
+       alsa.output_device.0 = first_device
+       alsa.output_device.1 = second_device
+```
+
+       A multi-value configuration option must start at index 0 and parsing will stop when there is a break in the sequence. That is, if the values are 0,1,3,4,5 then only 0 and 1 will be detected.
+
 ```
 network.bind_address
 	IP address that raveloxmidi listens on. This can be an IPv4 or IPv6 address.
@@ -116,6 +131,9 @@ remote.connect
 		To connect directly to a server/port, use the format:
 			remote.connect = [address]:port
 			A port number must be specified if making a direct connection.
+remote.use_control
+	Indicates whether CK (AppleMIDI Feedback) messages are sent to the a remote connection using the control port.
+	Default is yes
 client.name
 	Name to use when connecting to remote service. If not defined, service.name will be used.
 network.socket_timeout
@@ -156,6 +174,7 @@ If ALSA is detected, the following options are also available:
 ```
 alsa.output_device
 	Name of the rawmidi ALSA device to send MIDI events to.
+	This is a multi-value option.
 alsa.input_device
 	Name of the rawmidi ALSA device to read MIDI events from.
 alsa.input_buffer_size
